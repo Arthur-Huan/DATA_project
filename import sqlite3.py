@@ -64,5 +64,3 @@ CREATE TABLE IF NOT EXISTS comments (
 ''')
 
 # Commit the changes and close the connection
-conn.commit()
-conn.close()
