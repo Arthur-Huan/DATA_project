@@ -2,15 +2,18 @@ import sqlite3
 import hashlib
 import uuid
 
+
 # Function to create a connection to the database
 def create_connection():
     return sqlite3.connect("twitter_like.db")
+
 
 # Function to hash the password with salt
 def hash_password(password):
     salt = uuid.uuid4().hex
     hashed_password = hashlib.sha256(salt.encode() + password.encode()).hexdigest()
-    return (hashed_password, salt)
+    return hashed_password, salt
+
 
 # Function to initialize the database
 def initialize_database():
@@ -79,6 +82,7 @@ def initialize_database():
 
     conn.commit()
     conn.close()
+
 
 if __name__ == "__main__":
     initialize_database()

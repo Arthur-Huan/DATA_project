@@ -1,9 +1,15 @@
 import sqlite3
 
 import typer
+<<<<<<< HEAD
 from typing_extensions import Annotated
 from typing import Optional
 from data_format_checks import *
+=======
+
+from data_format_checks import *
+
+>>>>>>> 69f07526e234a0cf19c75e9a176048300b349c5d
 app = typer.Typer()
 
 
@@ -339,6 +345,7 @@ if __name__ == "__main__":
 
 
     app()
+<<<<<<< HEAD
 
 def main_menu(cursor):
     typer.echo("=== Twitter-like CLI Menu ===")
@@ -369,3 +376,5 @@ if __name__ == "__main__":
 
     while True:
         main_menu(cursor)  
+=======
+>>>>>>> 69f07526e234a0cf19c75e9a176048300b349c5d
