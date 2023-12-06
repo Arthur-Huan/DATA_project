@@ -3,11 +3,6 @@ import hashlib
 import uuid
 
 
-# Function to create a connection to the database
-def create_connection():
-    return sqlite3.connect("twitter_like.db")
-
-
 # Function to hash the password with salt
 def hash_password(password):
     salt = uuid.uuid4().hex
@@ -16,13 +11,13 @@ def hash_password(password):
 
 
 # Function to initialize the database
-def initialize_database():
-    conn = create_connection()
+def initialize_database(database_name):
+    conn = sqlite3.connect(database_name)
     cursor = conn.cursor()
 
-    # Create User Profiles Table
+    # Create Users Table
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS user_profiles (
+    CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
@@ -47,7 +42,7 @@ def initialize_database():
 
     # Create Followers/Following Table
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS followers_following (
+    CREATE TABLE IF NOT EXISTS followers (
         follow_id INTEGER PRIMARY KEY,
         follower_user_id INTEGER,
         following_user_id INTEGER,
@@ -85,5 +80,5 @@ def initialize_database():
 
 
 if __name__ == "__main__":
-    initialize_database()
+    initialize_database("twitter_like.db")
     print("Database setup and initialization completed.")

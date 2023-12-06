@@ -135,7 +135,7 @@ def like_tweet(cur, username):
 
 # Function to like a tweet in the database
 def like_tweet_in_database(username, tweet_id, cur):
-    cur.execute("INSERT INTO likes (username, tweet_id) VALUES (?, ?)", (username, tweet_id))
+    cur.execute("INSERT INTO likes_retweets (username, tweet_id) VALUES (?, ?)", (username, tweet_id))
     cur.connection.commit()
 
 
@@ -160,7 +160,7 @@ def view_likes(cur):
 
 
 def get_likes_count(tweet_id, cur):
-    cur.execute("SELECT COUNT(*) FROM likes WHERE tweet_id = ?", (tweet_id,))
+    cur.execute("SELECT COUNT(*) FROM likes_retweets WHERE tweet_id = ?", (tweet_id,))
     likes_count = cur.fetchone()[0]
     return likes_count
 
