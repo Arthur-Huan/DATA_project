@@ -1,13 +1,4 @@
 import sqlite3
-import hashlib
-import uuid
-
-
-# Function to hash the password with salt
-def hash_password(password):
-    salt = uuid.uuid4().hex
-    hashed_password = hashlib.sha256(salt.encode() + password.encode()).hexdigest()
-    return hashed_password, salt
 
 
 # Function to initialize the database
