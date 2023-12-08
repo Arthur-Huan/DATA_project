@@ -1,9 +1,8 @@
 import sqlite3
 
 import typer
-from typing_extensions import Annotated
 from typing import Optional
-from data_format_checks import *
+from chirrup.data_format_checks import *
 
 app = typer.Typer()
 
@@ -15,12 +14,17 @@ def init_cursor(database_name):
     return cur
 
 
-### 3.1 - User Registration & Login ###
+# ========================
+# 3.1 - User Registration & Login
+# ========================
 
-# Function to register a new user
 def register_user(cur):
+    """
+    Registers a user in databse after checking for validity.
+    :param cur: SQL cursor
+    :return: None
+    """
     username = typer.prompt("Enter new username")
-
     # Check if the username is valid
     username_validity = username_check(username, cur)
     while username_validity != -1:
@@ -35,82 +39,83 @@ def register_user(cur):
             typer.echo("Username already in use.")
         else:
             typer.echo("Unexpected username formatting issue, please file a bug report.")
-
-        # Prompt user for a new username
+        # Prompt username again
         username = typer.prompt("Enter new username")
         username_validity = username_check(username, cur)
 
+    # TODO: Confirmation for password
     # Prompt for a password
     password = typer.prompt("Enter password", hide_input=True)
 
     # Store the new user in the database
-    store_user_in_database(username, password, cur)
-
+    # TODO: Store hash instead of the direct password
+    cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
     typer.echo("User registered successfully.")
 
 
-# Function to log in a user
 def login_user(cur):
+    """
+    Log in a user, checking username and password in the database.
+    :param cur: SQL cursor
+    :return:
+            username if successful login
+            None otherwise
+    """
     username = typer.prompt("Enter your username")
     password = typer.prompt("Enter your password", hide_input=True)
-
+    # TODO: Use hashing instead of password
     # Check if the provided credentials are valid
     if validate_user_credentials(username, password, cur):
-        typer.echo("Login successful. Welcome, {}!".format(username))
+        typer.echo(f"Login successful. Welcome, {username}!")
         return username
     else:
         typer.echo("Invalid username or password. Please try again.")
         return None
 
 
-# Function to store a new user in the database
-def store_user_in_database(username, password, cur):
-    cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
-    cur.connection.commit()
-
-
-# Function to validate user credentials
 def validate_user_credentials(username, password, cur):
+    """
+    Validate user credentials
+    :param username: Inputted username to check
+    :param password: Inputted password to check
+    :param cur: SQL cursor
+    :return:
+    """
     cur.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
     user = cur.fetchone()
     return user is not None
 
 
-### 3.2 - Posting New Tweets ###
+# ========================
+# 3.2 - Posting New Tweets
+# ========================
 
-# Function to post a new tweet
 def post_tweet(cur, username):
+    """
+    'Posts' a tweet by storing it in the tweet database. Assumes user is already logged in.
+    :param cur: SQL cursor
+    :param username: The username of the person tweeting.
+    :return: None
+    """
     tweet_text = typer.prompt("Compose your tweet")
-
-    # Store the new tweet in the database
-    store_tweet_in_database(username, tweet_text, cur)
-
+    cur.execute("INSERT INTO tweets (username, tweet_text, timestamp) VALUES (?, ?, datetime('now'))",
+                (username, tweet_text))
     typer.echo("Tweet posted successfully.")
 
 
-# Function to store a users new tweet in the database
-def store_tweet_in_database(username, tweet_text, cur):
-    cur.execute("INSERT INTO tweets (username, tweet_text, timestamp) VALUES (?, ?, datetime('now'))",
-                (username, tweet_text))
-    cur.connection.commit()
+# ========================
+# 3.3 - Viewing User's Timeline
+# ========================
 
 
-### 3.3 - Viewing User's Timeline ###
-
-# Function to view user's timeline
 def view_timeline(cur, username):
+    """
+    Prints the user's timeline. Assumes user is already logged in.
+    :param cur: SQL cursor
+    :param username: Username of user
+    :return: None
+    """
     # Retrieve and display tweets from the user's timeline (tweets from followed users)
-    tweets = get_timeline_for_user(username, cur)
-
-    if tweets:
-        for t in tweets:
-            typer.echo("{} (@{}): {}".format(t[1], t[0], t[2]))
-    else:
-        typer.echo("Your timeline is empty.")
-
-
-# Function to get tweets from users that the given user follows
-def get_timeline_for_user(username, cur):
     cur.execute("""
         SELECT t.username, u.username, t.tweet_text, t.timestamp
         FROM tweets t
@@ -119,76 +124,71 @@ def get_timeline_for_user(username, cur):
         WHERE f.username = ?
         ORDER BY t.timestamp DESC
     """, (username,))
-    return cur.fetchall()
+
+    tweets = cur.fetchall()
+    if tweets:
+        for t in tweets:
+            typer.echo("{} (@{}): {}".format(t[1], t[0], t[2]))
+    else:
+        typer.echo("Your timeline is empty.")
 
 
-### 3.4 - Liking Tweets ###
+# ========================
+# 3.4 - Liking Tweets
+# ========================
 
+# TODO: Behavior is seemingly wrong, it should be either insert into for the first like, or add a value to likes,
+# or, just initialize with 0 and add 1 to the value
 def like_tweet(cur, username):
     tweet_id = typer.prompt("Enter the ID of the tweet you want to like")
-
-    # Like the tweet in the database
-    like_tweet_in_database(username, tweet_id, cur)
-
+    cur.execute("INSERT INTO likes_retweets (username, tweet_id) VALUES (?, ?)", (username, tweet_id))
     typer.echo("Tweet liked successfully.")
 
 
-# Function to like a tweet in the database
-def like_tweet_in_database(username, tweet_id, cur):
-    cur.execute("INSERT INTO likes_retweets (username, tweet_id) VALUES (?, ?)", (username, tweet_id))
-    cur.connection.commit()
+# ========================
+# 3.5 - Showing the Number of Likes of Tweets
+# ========================
 
 
-### 3.5 - Showing the Number of Likes of Tweets ###
-''' ** might have to change how this is implemented not sure if the # of likes have to be displayed at all times 
- or if the value just has to be retrievable ** '''
+''' TODO: might have to change how this is implemented not sure if the # of likes have to be displayed at all times 
+or if the value just has to be retrievable'''
 
 
 # Function to view the number of likes on a tweet
 def view_likes(cur):
     tweet_id = typer.prompt("Enter the ID of the tweet you want to view likes for")
-
-    # Get and display the number of likes for the tweet
-    likes_count = get_likes_count(tweet_id, cur)
-
+    cur.execute("SELECT COUNT(*) FROM likes_retweets WHERE tweet_id = ?", (tweet_id,))
+    likes_count = cur.fetchone()[0]
     if likes_count is not None:
         typer.echo("Tweet {} has {} likes.".format(tweet_id, likes_count))
     else:
         typer.echo("Tweet not found.")
 
-    # Function to get the number of likes for a tweet
 
+# ========================
+# 3.6 - Comments on Tweets
+# ========================
 
-def get_likes_count(tweet_id, cur):
-    cur.execute("SELECT COUNT(*) FROM likes_retweets WHERE tweet_id = ?", (tweet_id,))
-    likes_count = cur.fetchone()[0]
-    return likes_count
-
-
-### 3.6 - Comments on Tweets ###
 
 # Function to add a comment to a tweet
 def add_comment(cur, username):
     tweet_id = typer.prompt("Enter the ID of the tweet you want to comment on")
     comment_text = typer.prompt("Enter your comment")
-
     # Store the comment in the database
-    store_comment_in_database(username, tweet_id, comment_text, cur)
-
+    cur.execute("INSERT INTO comments (username, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
+                (username, tweet_id, comment_text))
     typer.echo("Comment added successfully.")
 
 
-# Function to store a new comment in the database
-def store_comment_in_database(username, tweet_id, comment_text, cur):
-    cur.execute("INSERT INTO comments (username, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
-                (username, tweet_id, comment_text))
-    cur.connection.commit()
+# ========================
+# 3.7 - Following & Unfollowing Users
+# ========================
 
 
-### 3.7 - Following & Unfollowing Users ###
-
-# Function to follow a user
 def follow_user(username, user_to_follow, cur):
+    """
+    Function to follow a user
+    """
     # Check if the user exists
     cur.execute("SELECT 1 FROM users WHERE username = ?", (user_to_follow,))
     user_exists = cur.fetchone()
@@ -224,8 +224,12 @@ def unfollow_user(username, user_to_unfollow, cur):
         typer.echo("You are not following {}.".format(user_to_unfollow))
 
 
-### 3.9 - Documentation & Help System ###
-''' *** current implementation for this portion of the features is a bit barebones will probably need to add more 
+# ========================
+# 3.9 - Documentation & Help System
+# ========================
+
+
+''' TODO: current implementation for this portion of the features is a bit barebones will probably need to add more 
 to make it more specific for different use cases '''
 
 
@@ -278,10 +282,10 @@ if __name__ == "__main__":
     @app.command()
     def login():
         username = login_user(cursor)
-        if username:
-            # If login is successful, show additional commands
-
-            ### 3.8 - User Friendly Menu System ###
+        if username:  # If login is successful, show additional commands
+            # ========================
+            # 3.8 - User Friendly Menu System ###
+            # ========================
             typer.echo("Welcome, {}!".format(username))
             app.add_typer(post_tweet, name="post", help="Post a new tweet")
             app.add_typer(view_timeline, name="timeline", help="View your timeline")
@@ -338,7 +342,8 @@ if __name__ == "__main__":
         if username:
             unfollow_user(cursor, username)
 
-def main_menu(cursor):
+
+def main_menu(cur):
     typer.echo("=== Twitter-like CLI Menu ===")
     typer.echo("1. Register")
     typer.echo("2. Login")
@@ -347,9 +352,9 @@ def main_menu(cursor):
     choice = typer.prompt("Enter your choice (1/2/3): ")
 
     if choice == "1":
-        register_user(cursor)
+        register_user(cur)
     elif choice == "2":
-        username = login_user(cursor)
+        username = login_user(cur)
         if username:
             # If login is successful, show additional commands
             typer.echo("Welcome, {}!".format(username))
@@ -360,22 +365,3 @@ def main_menu(cursor):
         raise typer.Exit()
     else:
         typer.echo("Invalid choice. Please enter 1, 2, or 3.")
-
-if __name__ == "__main__":
-    db_name = "twitter_like.db"  
-    cursor = init_cursor(db_name)
-
-    while True:
-        main_menu(cursor)
-
-    # Add the following lines to handle your existing CLI commands after the main menu loop:
-    app.add_typer(post_tweet, name="post", help="Post a new tweet")
-    app.add_typer(view_timeline, name="timeline", help="View your timeline")
-    app.add_typer(like_tweet, name="like", help="Like a tweet")
-    app.add_typer(view_likes, name="view-likes", help="View likes on a tweet")
-    app.add_typer(add_comment, name="comment", help="Add a comment to a tweet")
-    app.add_typer(follow_user, name="follow", help="Follow a user")
-    app.add_typer(unfollow_user, name="unfollow", help="Unfollow a user")
-
-
-    app()

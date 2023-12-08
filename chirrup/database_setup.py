@@ -36,7 +36,7 @@ def initialize_database(database_name):
         user_id INTEGER,
         tweet_content TEXT,
         creation_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES user_profiles(user_id)
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
     )
     ''')
 
@@ -46,8 +46,8 @@ def initialize_database(database_name):
         follow_id INTEGER PRIMARY KEY,
         follower_user_id INTEGER,
         following_user_id INTEGER,
-        FOREIGN KEY (follower_user_id) REFERENCES user_profiles(user_id),
-        FOREIGN KEY (following_user_id) REFERENCES user_profiles(user_id)
+        FOREIGN KEY (follower_user_id) REFERENCES users(user_id),
+        FOREIGN KEY (following_user_id) REFERENCES users(user_id)
     )
     ''')
 
@@ -57,7 +57,7 @@ def initialize_database(database_name):
         like_retweet_id INTEGER PRIMARY KEY,
         user_id INTEGER,
         tweet_id INTEGER,
-        FOREIGN KEY (user_id) REFERENCES user_profiles(user_id),
+        FOREIGN KEY (user_id) REFERENCES users(user_id),
         FOREIGN KEY (tweet_id) REFERENCES tweets(tweet_id)
     )
     ''')
@@ -70,7 +70,7 @@ def initialize_database(database_name):
         tweet_id INTEGER,
         comment_text TEXT,
         comment_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES user_profiles(user_id),
+        FOREIGN KEY (user_id) REFERENCES users(user_id),
         FOREIGN KEY (tweet_id) REFERENCES tweets(tweet_id)
     )
     ''')
@@ -80,5 +80,5 @@ def initialize_database(database_name):
 
 
 if __name__ == "__main__":
-    initialize_database("twitter_like.db")
+    initialize_database("chirrup.db")
     print("Database setup and initialization completed.")
