@@ -240,10 +240,11 @@ def add_comment(cur, username):
 # ========================
 
 
-def follow_user(username, user_to_follow, cur):
+def follow_user(cur, username):
     """
     Function to follow a user
     """
+    user_to_follow = typer.prompt("Enter the username of the user you'd like to follow")
     # Check if the user exists
     cur.execute("SELECT 1 FROM users WHERE username = ?", (user_to_follow,))
     user_exists = cur.fetchone()
@@ -265,7 +266,8 @@ def follow_user(username, user_to_follow, cur):
 
 
 # Function to unfollow a user
-def unfollow_user(username, user_to_unfollow, cur):
+def unfollow_user(cur, username):
+    user_to_unfollow = typer.prompt("Enter the username of the user you'd like to unfollow")
     # Check if the user is being followed
     cur.execute("SELECT 1 FROM follows WHERE username = ? AND followed_username = ?", (username, user_to_unfollow))
     is_following = cur.fetchone()
