@@ -93,8 +93,8 @@ def register_user(cur):
         username_validity = check_username(username, cursor)
 
     # Prompt for a password (and enter password again), and check validity
-    password = typer.prompt("Enter new password: ", hide_input=True)
-    password_again = typer.prompt("Re-enter password: ", hide_input=True)
+    password = typer.prompt("Enter new password", hide_input=True)
+    password_again = typer.prompt("Re-enter password", hide_input=True)
     password_validity = check_password(password, password_again)
     while password_validity != -1:
         # Handle different validity cases
@@ -107,8 +107,8 @@ def register_user(cur):
         else:
             typer.echo("Unexpected username formatting issue, please file a bug report.")
         # Prompt for a password (and enter password again), and check validity
-        password = typer.prompt("Enter new password: ", hide_input=True)
-        password_again = typer.prompt("Re-enter password: ", hide_input=True)
+        password = typer.prompt("Enter new password", hide_input=True)
+        password_again = typer.prompt("Re-enter password", hide_input=True)
         password_validity = check_password(password, password_again)
 
     # Store the new user in the database

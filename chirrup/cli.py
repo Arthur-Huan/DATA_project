@@ -1,10 +1,11 @@
-from chirrup import __version__, __app_name__, __database_path__
+from chirrup import __version__, __app_name__, __database_path__, database_setup
 from chirrup.backend import *
 
 app = typer.Typer()
 
 
 def init_cursor():
+    database_setup.initialize_database(__database_path__)
     conn = sqlite3.connect(__database_path__, timeout=120)
     cur = conn.cursor()
     return cur
@@ -107,11 +108,11 @@ def unfollow():
 
 def version_callback(value: bool):
     if value:
-        typer.echo(f"Chirrup CLI app: {__version__}")
+        typer.echo(f"{__app_name__} {__version__}")
         raise typer.Exit()
 
 
-@app.callback(invoke_without_command=True)
+@app.command()
 def menu():
     cursor = init_cursor()
     # TODO: Add --version flag to this callback
