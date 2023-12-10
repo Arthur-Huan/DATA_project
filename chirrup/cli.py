@@ -100,28 +100,29 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def menu():
     # TODO: Add --version flag to this callback
     """
     Start Chirrup CLI and show user menu.
     """
     typer.echo("=== Twitter-like CLI Menu ===")
-    typer.echo("1. Register")
-    typer.echo("2. Login")
-    typer.echo("3. Exit")
+    while True:
+        typer.echo("1. Register")
+        typer.echo("2. Login")
+        typer.echo("E. Exit")
 
-    choice = typer.prompt("Enter your choice (1/2/3): ")
+        choice = typer.prompt("Enter your choice (1/2/E): ")
 
-    if choice == "1":
-        register_user(cursor)
-    elif choice == "2":
-        login_user(cursor)
-    elif choice == "3":
-        typer.echo("Exiting the application.")
-        raise typer.Exit()
-    else:
-        typer.echo("Invalid choice. Please enter 1, 2, or 3.")
+        if choice == "1":
+            register_user(cursor)
+        elif choice == "2":
+            login()
+        elif choice == "E" or choice == "e":
+            typer.echo("Exiting the application.")
+            raise typer.Exit()
+        else:
+            typer.echo("Invalid choice.")
 
 
 if __name__ == "__main__":
