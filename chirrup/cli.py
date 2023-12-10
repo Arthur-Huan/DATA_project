@@ -1,20 +1,24 @@
-from typing import Optional
-
-import typer
-
 from chirrup import __version__, __app_name__, __database_path__
 from chirrup.backend import *
 
 app = typer.Typer()
 
 
+def init_cursor():
+    conn = sqlite3.connect(__database_path__, timeout=120)
+    cur = conn.cursor()
+    return cur
+
+
 @app.command()
 def register():
+    cursor = init_cursor()
     register_user(cursor)
 
 
 @app.command()
 def login():
+    cursor = init_cursor()
     username = login_user(cursor)
     if username:  # If login is successful, show additional commands
         # ========================
@@ -49,6 +53,7 @@ def login():
 
 @app.command()
 def tweet():
+    cursor = init_cursor()
     username = login_user(cursor)
     if username:
         post_tweet(cursor, username)
@@ -56,6 +61,7 @@ def tweet():
 
 @app.command()
 def timeline():
+    cursor = init_cursor()
     username = login_user(cursor)
     if username:
         view_timeline(cursor, username)
@@ -63,6 +69,7 @@ def timeline():
 
 @app.command()
 def like():
+    cursor = init_cursor()
     username = login_user(cursor)
     if username:
         like_tweet(cursor, username)
@@ -70,11 +77,13 @@ def like():
 
 @app.command()
 def likes():
+    cursor = init_cursor()
     view_likes(cursor)
 
 
 @app.command()
 def comment():
+    cursor = init_cursor()
     username = login_user(cursor)
     if username:
         add_comment(cursor, username)
@@ -82,6 +91,7 @@ def comment():
 
 @app.command()
 def follow():
+    cursor = init_cursor()
     username = login_user(cursor)
     if username:
         follow_user(cursor, username)
@@ -89,6 +99,7 @@ def follow():
 
 @app.command()
 def unfollow():
+    cursor = init_cursor()
     username = login_user(cursor)
     if username:
         unfollow_user(cursor, username)
@@ -102,6 +113,7 @@ def version_callback(value: bool):
 
 @app.callback(invoke_without_command=True)
 def menu():
+    cursor = init_cursor()
     # TODO: Add --version flag to this callback
     """
     Start Chirrup CLI and show user menu.
@@ -112,7 +124,7 @@ def menu():
         typer.echo("2. Login")
         typer.echo("E. Exit")
 
-        choice = typer.prompt("Enter your choice (1/2/E): ")
+        choice = typer.prompt("Enter your choice (1/2/E)")
 
         if choice == "1":
             register_user(cursor)
@@ -126,6 +138,4 @@ def menu():
 
 
 if __name__ == "__main__":
-    conn = sqlite3.connect(__database_path__, timeout=120)
-    cursor = conn.cursor()
     app()
