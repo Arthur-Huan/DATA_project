@@ -1,81 +1,76 @@
 import sqlite3
-import hashlib
-import uuid
+import os
 
 
-# Function to create a connection to the database
-def create_connection():
-    return sqlite3.connect("twitter_like.db")
-
-
-# Function to hash the password with salt
-def hash_password(password):
-    salt = uuid.uuid4().hex
-    hashed_password = hashlib.sha256(salt.encode() + password.encode()).hexdigest()
-    return hashed_password, salt
+def reset_database(database_path):
+    try:
+        os.remove(database_path)
+    except FileNotFoundError:
+        print(f"Database at {database_path} was not found.")
+    finally:
+        initialize_database(database_path)
 
 
 # Function to initialize the database
-def initialize_database():
-    conn = create_connection()
-    cursor = conn.cursor()
+def initialize_database(database_name):
+    conn = sqlite3.connect(database_name)
+    cur = conn.cursor()
 
-    # Create User Profiles Table
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS user_profiles (
+    # Create Users Table
+    cur.execute('''
+    CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
+        password BLOB NOT NULL,
         full_name TEXT,
         email TEXT,
         profile_image TEXT,
-        registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        salt TEXT
+        registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
 
     # Create Tweets Table
-    cursor.execute('''
+    cur.execute('''
     CREATE TABLE IF NOT EXISTS tweets (
         tweet_id INTEGER PRIMARY KEY,
         user_id INTEGER,
         tweet_content TEXT,
-        creation_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES user_profiles(user_id)
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
     )
     ''')
 
     # Create Followers/Following Table
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS followers_following (
+    cur.execute('''
+    CREATE TABLE IF NOT EXISTS follows (
         follow_id INTEGER PRIMARY KEY,
         follower_user_id INTEGER,
         following_user_id INTEGER,
-        FOREIGN KEY (follower_user_id) REFERENCES user_profiles(user_id),
-        FOREIGN KEY (following_user_id) REFERENCES user_profiles(user_id)
+        FOREIGN KEY (follower_user_id) REFERENCES users(user_id),
+        FOREIGN KEY (following_user_id) REFERENCES users(user_id)
     )
     ''')
 
     # Create Likes/Retweets Table
-    cursor.execute('''
+    cur.execute('''
     CREATE TABLE IF NOT EXISTS likes_retweets (
         like_retweet_id INTEGER PRIMARY KEY,
         user_id INTEGER,
         tweet_id INTEGER,
-        FOREIGN KEY (user_id) REFERENCES user_profiles(user_id),
+        FOREIGN KEY (user_id) REFERENCES users(user_id),
         FOREIGN KEY (tweet_id) REFERENCES tweets(tweet_id)
     )
     ''')
 
     # Create Comments Table
-    cursor.execute('''
+    cur.execute('''
     CREATE TABLE IF NOT EXISTS comments (
         comment_id INTEGER PRIMARY KEY,
         user_id INTEGER,
         tweet_id INTEGER,
         comment_text TEXT,
         comment_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES user_profiles(user_id),
+        FOREIGN KEY (user_id) REFERENCES users(user_id),
         FOREIGN KEY (tweet_id) REFERENCES tweets(tweet_id)
     )
     ''')
@@ -85,5 +80,5 @@ def initialize_database():
 
 
 if __name__ == "__main__":
-    initialize_database()
+    initialize_database("chirrup.db")
     print("Database setup and initialization completed.")
