@@ -77,7 +77,7 @@ def like():
 
 
 @app.command()
-def likes():
+def view_likes():
     cursor = init_cursor()
     view_likes(cursor)
 
@@ -113,7 +113,7 @@ def version_callback(value: bool):
 
 
 @app.command()
-def menu():
+def cli():
     cursor = init_cursor()
     # TODO: Add --version flag to this callback
     """
