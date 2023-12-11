@@ -252,7 +252,7 @@ def add_comment(cur, username):
     comment_text = typer.prompt("Enter your comment")
     # Store the comment in the database
     cur.execute("INSERT INTO comments (user_id, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
-                (username, tweet_id, comment_text))
+                (user_id, tweet_id, comment_text))
     typer.echo("Comment added successfully.")
 
 
@@ -263,41 +263,58 @@ def add_comment(cur, username):
 
 def follow_user(cur, username):
     """
-    Function to follow a user
+    Follow a user
+    :param cur: SQL cursor
+    :param username: Username of the current user (not the user to follow)
+    :return: None
     """
     user_to_follow = typer.prompt("Enter the username of the user you'd like to follow")
+    user_id = get_id(cur, username)
+    user_to_follow_id = get_id(cur, user_to_follow)
+
     # Check if the user exists
     cur.execute("SELECT 1 FROM users WHERE username = ?", (user_to_follow,))
     user_exists = cur.fetchone()
 
     if user_exists:
         # Check if the user is not already being followed
-        cur.execute("SELECT 1 FROM follows WHERE username = ? AND followed_username = ?", (username, user_to_follow))
+        cur.execute("SELECT 1 FROM follows WHERE follower_user_id = ? AND following_user_id = ?",
+                    (user_id, user_to_follow_id))
         already_following = cur.fetchone()
 
         if not already_following:
             # Follow the user in the database
-            cur.execute("INSERT INTO follows (username, followed_username) VALUES (?, ?)", (username, user_to_follow))
+            cur.execute("INSERT INTO follows (follower_user_id, following_user_id) VALUES (?, ?)",
+                        (user_id, user_to_follow_id))
             cur.connection.commit()
-            typer.echo("You are now following {}.".format(user_to_follow))
+            typer.echo(f"You are now following {user_to_follow}.")
         else:
-            typer.echo("You are already following {}.".format(user_to_follow))
+            typer.echo(f"You are already following {user_to_follow}.")
     else:
-        typer.echo("User {} does not exist.".format(user_to_follow))
+        typer.echo(f"User {user_to_follow} does not exist.")
 
 
-# Function to unfollow a user
 def unfollow_user(cur, username):
+    """
+    Unfollow a user
+    :param cur: SQL cursor
+    :param username: Username of the current user (not the user to unfollow)
+    :return: None
+    """
     user_to_unfollow = typer.prompt("Enter the username of the user you'd like to unfollow")
-    cur.execute("SELECT ")
+    user_id = get_id(cur, username)
+    user_to_unfollow_id = get_id(cur, user_to_unfollow)
+
     # Check if the user is being followed
-    cur.execute("SELECT 1 FROM follows WHERE username = ? AND followed_username = ?", (username, user_to_unfollow))
+    cur.execute("SELECT 1 FROM follows WHERE follower_user_id = ? AND following_user_id = ?",
+                (user_id, user_to_unfollow_id))
     is_following = cur.fetchone()
 
     if is_following:
         # Unfollow the user in the database
-        cur.execute("DELETE FROM follows WHERE username = ? AND followed_username = ?", (username, user_to_unfollow))
+        cur.execute("DELETE FROM follows WHERE follower_user_id = ? AND following_user_id = ?",
+                    (user_id, user_to_unfollow_id))
         cur.connection.commit()
-        typer.echo("You have unfollowed {}.".format(user_to_unfollow))
+        typer.echo(f"You have unfollowed {user_to_unfollow}.")
     else:
-        typer.echo("You are not following {}.".format(user_to_unfollow))
+        typer.echo(f"You are not following {user_to_unfollow}.")
