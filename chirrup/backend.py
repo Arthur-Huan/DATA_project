@@ -1,19 +1,35 @@
-import hashlib
 import re
 import sqlite3
-import uuid
+import bcrypt
 
 import typer
 
 
-# Function to hash the password with salt
-def hash_password(password):
-    salt = uuid.uuid4().hex
-    hashed_password = hashlib.sha256(salt.encode() + password.encode()).hexdigest()
-    return hashed_password, salt
+def get_id(cursor, user):
+    """
+    Get the user ID
+    :param user: Either username (str) or user ID (int)
+    :param cursor: SQL cursor
+    :return: The user ID
+    """
+    if user.instanceof(int):
+        return user
+    else:
+        username = user
+        cursor.execute("SELECT user_id from users WHERE username=?", (username,))
+        return cursor.fetchone()
 
 
-def check_username(username, cursor):
+def hash_password(plain_txt_password):
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(plain_txt_password, salt)
+
+
+def verify_password(plain_txt_password, hashed_password):
+    return bcrypt.checkpw(plain_txt_password, hashed_password)
+
+
+def check_username_format(username, cursor):
     """
     :param username: The username to be checked
     :param cursor: A sqlite3 cursor for the current database
@@ -37,7 +53,7 @@ def check_username(username, cursor):
     return -1
 
 
-def check_password(password, re_password):
+def check_password_format(password, re_password):
     """
     :param password: The password to be checked
     :param re_password: The re-entered password
@@ -75,7 +91,7 @@ def register_user(cur):
     """
     # Prompt username, and check validity
     username = typer.prompt("Enter new username")
-    username_validity = check_username(username, cur)
+    username_validity = check_username_format(username, cur)
     while username_validity != -1:
         # Handle different validity cases
         if username_validity == 1:
@@ -90,12 +106,12 @@ def register_user(cur):
             typer.echo("Unexpected username formatting issue, please file a bug report.")
         # Prompt username again, and check validity
         username = typer.prompt("Enter new username")
-        username_validity = check_username(username, cursor)
+        username_validity = check_username_format(username, cur)
 
     # Prompt for a password (and enter password again), and check validity
     password = typer.prompt("Enter new password", hide_input=True)
     password_again = typer.prompt("Re-enter password", hide_input=True)
-    password_validity = check_password(password, password_again)
+    password_validity = check_password_format(password, password_again)
     while password_validity != -1:
         # Handle different validity cases
         if password_validity == 1:
@@ -109,11 +125,12 @@ def register_user(cur):
         # Prompt for a password (and enter password again), and check validity
         password = typer.prompt("Enter new password", hide_input=True)
         password_again = typer.prompt("Re-enter password", hide_input=True)
-        password_validity = check_password(password, password_again)
+        password_validity = check_password_format(password, password_again)
 
     # Store the new user in the database
-    # TODO: Store hash instead of the direct password
-    cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+    pw_hash = hash_password(password)
+    del password
+    cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, pw_hash))
     typer.echo("User registered successfully.")
 
     cur.connection.commit()
@@ -130,14 +147,16 @@ def login_user(cur):
     """
     username = typer.prompt("Enter your username")
     password = typer.prompt("Enter your password", hide_input=True)
-    # TODO: Use hashing instead of password
     # Check if the provided credentials are valid
-    cur.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
-    if cur.fetchone() is not None:
+    cur.execute("SELECT password FROM users WHERE username = ?", (username,))
+    hashed_password = cur.fetchone()
+    if verify_password(password, hashed_password):
         typer.echo(f"Login successful. Welcome, {username}!")
+        del password, hashed_password
         return username
     else:
         typer.echo("Invalid username or password. Please try again.")
+        del password, hashed_password
         return None
 
 
@@ -152,9 +171,11 @@ def post_tweet(cur, username):
     :param username: The username of the person tweeting.
     :return: None
     """
+    cur.execute("SELECT user_id FROM users WHERE username=?", (username,))
+    user_id = cur.fetchone()
     tweet_text = typer.prompt("Compose your tweet")
-    cur.execute("INSERT INTO tweets (username, tweet_text, timestamp) VALUES (?, ?, datetime('now'))",
-                (username, tweet_text))
+    cur.execute("INSERT INTO tweets (user_id, tweet_content, timestamp) VALUES (?, ?, datetime('now'))",
+                (user_id, tweet_text))
     typer.echo("Tweet posted successfully.")
 
 
@@ -163,22 +184,22 @@ def post_tweet(cur, username):
 # ========================
 
 
-def view_timeline(cur, username):
+def view_timeline(cur, user):
     """
     Prints the user's timeline. Assumes user is already logged in.
     :param cur: SQL cursor
-    :param username: Username of user
+    :param user: Username or ID of user, judging based on the type of the parameter
     :return: None
     """
-    # Retrieve and display tweets from the user's timeline (tweets from followed users)
+    user_id = get_id(cur, user)
     cur.execute("""
-        SELECT t.username, u.username, t.tweet_text, t.timestamp
+        SELECT t.user_id, u.username, t.tweet_content, t.timestamp
         FROM tweets t
-        JOIN follows f ON t.username = f.followed_username
-        JOIN users u ON t.username = u.username
-        WHERE f.username = ?
+        JOIN follows f ON t.user_id = f.following_user_id
+        JOIN users u ON t.user_id = u.user_id
+        WHERE t.user_id = ?
         ORDER BY t.timestamp DESC
-    """, (username,))
+    """, (user_id,))
 
     tweets = cur.fetchall()
     if tweets:
@@ -192,11 +213,10 @@ def view_timeline(cur, username):
 # 3.4 - Liking Tweets
 # ========================
 
-# TODO: Behavior is seemingly wrong, it should be either insert into for the first like, or add a value to likes,
-# or, just initialize with 0 and add 1 to the value
-def like_tweet(cur, username):
+def like_tweet(cur, user):
+    user_id = get_id(cur, user)
     tweet_id = typer.prompt("Enter the ID of the tweet you want to like")
-    cur.execute("INSERT INTO likes_retweets (username, tweet_id) VALUES (?, ?)", (username, tweet_id))
+    cur.execute("INSERT INTO likes_retweets (user_id, tweet_id) VALUES (?, ?)", (user_id, tweet_id))
     typer.echo("Tweet liked successfully.")
 
 
@@ -227,10 +247,11 @@ def view_likes(cur):
 
 # Function to add a comment to a tweet
 def add_comment(cur, username):
+    user_id = get_id(cur, username)
     tweet_id = typer.prompt("Enter the ID of the tweet you want to comment on")
     comment_text = typer.prompt("Enter your comment")
     # Store the comment in the database
-    cur.execute("INSERT INTO comments (username, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
+    cur.execute("INSERT INTO comments (user_id, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
                 (username, tweet_id, comment_text))
     typer.echo("Comment added successfully.")
 
@@ -268,6 +289,7 @@ def follow_user(cur, username):
 # Function to unfollow a user
 def unfollow_user(cur, username):
     user_to_unfollow = typer.prompt("Enter the username of the user you'd like to unfollow")
+    cur.execute("SELECT ")
     # Check if the user is being followed
     cur.execute("SELECT 1 FROM follows WHERE username = ? AND followed_username = ?", (username, user_to_unfollow))
     is_following = cur.fetchone()
