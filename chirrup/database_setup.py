@@ -75,7 +75,6 @@ def initialize_database(database_name):
     )
     ''')
 
-
     # Create Retweets Table
     cur.execute('''
     CREATE TABLE IF NOT EXISTS retweets (
@@ -88,11 +87,5 @@ def initialize_database(database_name):
 )
 ''')
 
-
     conn.commit()
     conn.close()
-
-
-if __name__ == "__main__":
-    initialize_database("chirrup.db")
-    print("Database setup and initialization completed.")
