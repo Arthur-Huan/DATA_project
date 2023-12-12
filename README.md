@@ -11,6 +11,6 @@ To run Chirrup CLI, execute the following command in your terminal or command pr
 - If using Ppython: `python -m chirrup menu`
 - If using Poetry: `poetry run python -m chirrup menu`
 
-## Database initialization
+## Database Initialization
 
-As end users should not need to initalize the database, there is no command for it in the CLI. However, you can manually run `database_setup.py` in the `chirrup` sub-directory. Alternatively, use the CLI as usual, and a databsae will be initalized for you.
+As end users should not need to initialize the database, there is no command for it in the CLI. However, you can manually run `database_setup.py` in the `chirrup` sub-directory. Alternatively, use the CLI as usual; a database will be initalized for you.
