@@ -12,7 +12,7 @@ def get_id(cursor, user):
     :param cursor: SQL cursor
     :return: The user ID
     """
-    if user.instanceof(int):
+    if isinstance(user, int):
         return user
     else:
         username = user
@@ -149,17 +149,19 @@ def login_user(cur):
     password = typer.prompt("Enter your password", hide_input=True)
     # Check if the provided credentials are valid
     cur.execute("SELECT password FROM users WHERE username = ?", (username,))
-    hashed_password = cur.fetchone()[0]
-    if hashed_password is None:
+    hash = cur.fetchone()
+    if hash is None:
         typer.echo("User doesn't exist. Please try again.")
-    elif verify_password(password, hashed_password):
-        typer.echo(f"Login successful. Welcome, {username}!")
-        del password, hashed_password
-        return username
     else:
-        typer.echo("Invalid username or password. Please try again.")
-        del password, hashed_password
-        return None
+        hashed_password = hash[0]
+        if verify_password(password, hashed_password):
+            typer.echo(f"Login successful. Welcome, {username}!")
+            del password, hashed_password
+            return username
+        else:
+            typer.echo("Invalid username or password. Please try again.")
+            del password, hashed_password
+            return None
 
 
 # ========================
