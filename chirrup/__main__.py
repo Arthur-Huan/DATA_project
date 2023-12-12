@@ -51,8 +51,8 @@ def login():
             follow_user(cursor, username)
         elif choice == "7":
             unfollow_user(cursor, username)
-        elif choice =="8":
-            retweet_tweet(cursor,username)
+        elif choice == "8":
+            retweet_tweet(cursor, username)
 
 
 @app.command()

@@ -17,16 +17,16 @@ def get_id(cursor, user):
     else:
         username = user
         cursor.execute("SELECT user_id from users WHERE username=?", (username,))
-        return cursor.fetchone()
+        return cursor.fetchone()[0]
 
 
 def hash_password(plain_txt_password):
     salt = bcrypt.gensalt()
-    return bcrypt.hashpw(plain_txt_password, salt)
+    return bcrypt.hashpw(plain_txt_password.encode("utf-8"), salt)
 
 
 def verify_password(plain_txt_password, hashed_password):
-    return bcrypt.checkpw(plain_txt_password, hashed_password)
+    return bcrypt.checkpw(plain_txt_password.encode("utf-8"), hashed_password)
 
 
 def check_username_format(username, cursor):
@@ -85,47 +85,47 @@ def init_cursor(database_path):
 
 def register_user(cur):
     """
-    Registers a user in databse after checking for validity.
+    Registers a user in database after checking for correct format.
     :param cur: SQL cursor
     :return: None
     """
     # Prompt username, and check validity
     username = typer.prompt("Enter new username")
-    username_validity = check_username_format(username, cur)
-    while username_validity != -1:
+    username_format = check_username_format(username, cur)
+    while username_format != -1:
         # Handle different validity cases
-        if username_validity == 1:
+        if username_format == 1:
             typer.echo("Length of username should be between 2 to 32 characters.")
-        elif username_validity == 2:
+        elif username_format == 2:
             typer.echo("Username contains invalid characters. Only letters, numbers, and underscores are allowed.")
-        elif username_validity == 3:
+        elif username_format == 3:
             typer.echo("Underscores should not be at the start or end of a username.")
-        elif username_validity == 4:
+        elif username_format == 4:
             typer.echo("Username already in use.")
         else:
             typer.echo("Unexpected username formatting issue, please file a bug report.")
         # Prompt username again, and check validity
         username = typer.prompt("Enter new username")
-        username_validity = check_username_format(username, cur)
+        username_format = check_username_format(username, cur)
 
     # Prompt for a password (and enter password again), and check validity
     password = typer.prompt("Enter new password", hide_input=True)
     password_again = typer.prompt("Re-enter password", hide_input=True)
-    password_validity = check_password_format(password, password_again)
-    while password_validity != -1:
+    password_format = check_password_format(password, password_again)
+    while password_format != -1:
         # Handle different validity cases
-        if password_validity == 1:
+        if password_format == 1:
             typer.echo("Passwords don't match.")
-        elif password_validity == 2:
+        elif password_format == 2:
             typer.echo("Password must be at least 8 characters or longer.")
-        elif password_validity == 3:
+        elif password_format == 3:
             typer.echo("Password must include a mix of numbers and letters.")
         else:
             typer.echo("Unexpected username formatting issue, please file a bug report.")
         # Prompt for a password (and enter password again), and check validity
         password = typer.prompt("Enter new password", hide_input=True)
         password_again = typer.prompt("Re-enter password", hide_input=True)
-        password_validity = check_password_format(password, password_again)
+        password_format = check_password_format(password, password_again)
 
     # Store the new user in the database
     pw_hash = hash_password(password)
@@ -149,8 +149,10 @@ def login_user(cur):
     password = typer.prompt("Enter your password", hide_input=True)
     # Check if the provided credentials are valid
     cur.execute("SELECT password FROM users WHERE username = ?", (username,))
-    hashed_password = cur.fetchone()
-    if verify_password(password, hashed_password):
+    hashed_password = cur.fetchone()[0]
+    if hashed_password is None:
+        typer.echo("User doesn't exist. Please try again.")
+    elif verify_password(password, hashed_password):
         typer.echo(f"Login successful. Welcome, {username}!")
         del password, hashed_password
         return username
@@ -171,8 +173,7 @@ def post_tweet(cur, username):
     :param username: The username of the person tweeting.
     :return: None
     """
-    cur.execute("SELECT user_id FROM users WHERE username=?", (username,))
-    user_id = cur.fetchone()
+    user_id = get_id(username)
     tweet_text = typer.prompt("Compose your tweet")
     cur.execute("INSERT INTO tweets (user_id, tweet_content, timestamp) VALUES (?, ?, datetime('now'))",
                 (user_id, tweet_text))
@@ -216,7 +217,7 @@ def view_timeline(cur, user):
 def like_tweet(cur, user):
     user_id = get_id(cur, user)
     tweet_id = typer.prompt("Enter the ID of the tweet you want to like")
-    cur.execute("INSERT INTO likes_retweets (user_id, tweet_id) VALUES (?, ?)", (user_id, tweet_id))
+    cur.execute("INSERT INTO likes (user_id, tweet_id) VALUES (?, ?)", (user_id, tweet_id))
     typer.echo("Tweet liked successfully.")
 
 
@@ -232,7 +233,7 @@ or if the value just has to be retrievable'''
 # Function to view the number of likes on a tweet
 def view_likes(cur):
     tweet_id = typer.prompt("Enter the ID of the tweet you want to view likes for")
-    cur.execute("SELECT COUNT(*) FROM likes_retweets WHERE tweet_id = ?", (tweet_id,))
+    cur.execute("SELECT COUNT(*) FROM likes WHERE tweet_id = ?", (tweet_id,))
     likes_count = cur.fetchone()[0]
     if likes_count is not None:
         typer.echo("Tweet {} has {} likes.".format(tweet_id, likes_count))

@@ -53,8 +53,8 @@ def initialize_database(database_name):
 
     # Create Likes/Retweets Table
     cur.execute('''
-    CREATE TABLE IF NOT EXISTS likes_retweets (
-        like_retweet_id INTEGER PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS likes (
+        like_id INTEGER PRIMARY KEY,
         user_id INTEGER,
         tweet_id INTEGER,
         FOREIGN KEY (user_id) REFERENCES users(user_id),
@@ -69,7 +69,7 @@ def initialize_database(database_name):
         user_id INTEGER,
         tweet_id INTEGER,
         comment_text TEXT,
-        comment_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(user_id),
         FOREIGN KEY (tweet_id) REFERENCES tweets(tweet_id)
     )
