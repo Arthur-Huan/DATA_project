@@ -318,3 +318,14 @@ def unfollow_user(cur, username):
         typer.echo(f"You have unfollowed {user_to_unfollow}.")
     else:
         typer.echo(f"You are not following {user_to_unfollow}.")
+
+
+# ========================
+# 3.8 - Retweeting Tweets
+# ========================
+
+def retweet_tweet(cur, user):
+    user_id = get_id(cur, user)
+    tweet_id = typer.prompt("Enter the ID of the tweet you want to retweet")
+    cur.execute("INSERT INTO retweets (user_id, tweet_id) VALUES (?, ?)", (user_id, tweet_id))
+    typer.echo("Tweet retweeted successfully.")

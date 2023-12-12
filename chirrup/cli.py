@@ -33,8 +33,9 @@ def login():
         typer.echo("5. Add a comment to a tweet")
         typer.echo("6. Follow a user")
         typer.echo("7. Unfollow a user")
+        typer.echo("8. Retweet a tweet")
 
-        choice = typer.prompt("What would you wish to do? (1/2/3/4/5/6/7)")
+        choice = typer.prompt("What would you wish to do? (1/2/3/4/5/6/7/8)")
 
         if choice == "1":
             post_tweet(cursor, username)
@@ -50,6 +51,8 @@ def login():
             follow_user(cursor, username)
         elif choice == "7":
             unfollow_user(cursor, username)
+        elif choice =="8":
+            retweet_tweet(cursor,username)
 
 
 @app.command()
@@ -104,6 +107,13 @@ def unfollow():
     username = login_user(cursor)
     if username:
         unfollow_user(cursor, username)
+
+@app.command()
+def retweet():
+    cursor = init_cursor()
+    username = login_user(cursor)
+    if username:
+        retweet_tweet(cursor, username)
 
 
 def version_callback(value: bool):

@@ -75,6 +75,20 @@ def initialize_database(database_name):
     )
     ''')
 
+
+    # Create Retweets Table
+    cur.execute('''
+    CREATE TABLE IF NOT EXISTS retweets (
+    retweet_id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    tweet_id INTEGER,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (tweet_id) REFERENCES tweets(tweet_id)
+)
+''')
+
+
     conn.commit()
     conn.close()
 
