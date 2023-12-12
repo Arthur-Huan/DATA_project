@@ -8,8 +8,8 @@ To set up the required dependencies for this Python project, use `python -m pip 
 
 To run Chirrup CLI, execute the following command in your terminal or command prompt:
 
-If using pip: `python -m chirrup menu`
-If using Poetry: `poetry run python -m chirrup menu`
+- If using pip: `python -m chirrup menu`
+- If using pypoetry: `poetry run python -m chirrup menu`
 
 Make sure you are in the DATA_project folder before running the command.
 
