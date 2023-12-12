@@ -274,7 +274,7 @@ def view_likes(cur):
 def add_comment(cur, username):
     tweet_id = typer.prompt("Enter the ID of the tweet you want to comment on")
     cur.execute("SELECT 1 FROM tweets WHERE tweet_id = ?", (tweet_id,))
-    if cur.fetchone is None:
+    if cur.fetchone() is None:
         typer.echo("Tweet doesn't exist.")
         return
     comment_text = typer.prompt("Enter your comment")
@@ -287,7 +287,7 @@ def add_comment(cur, username):
 def view_comments(cur):
     tweet_id = typer.prompt("Enter the ID of the tweet you'd like to see comments for")
     cur.execute("SELECT 1 FROM tweets WHERE tweet_id = ?", (tweet_id,))
-    if cur.fetchone is None:
+    if cur.fetchone() is None:
         typer.echo("Tweet doesn't exist.")
         return
 
@@ -383,7 +383,7 @@ def retweet_tweet(cur, user):
     user_id = get_id(cur, user)
     tweet_id = typer.prompt("Enter the ID of the tweet you want to retweet")
     cur.execute("SELECT tweet_content, username FROM tweets WHERE tweet_id = ?", (tweet_id,))
-    tweet_selected = cur.fetchon()
+    tweet_selected = cur.fetchone()
     if tweet_selected is None:
         typer.echo("Tweet doesn't exist.")
     else:
