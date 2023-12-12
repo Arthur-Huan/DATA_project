@@ -173,7 +173,7 @@ def post_tweet(cur, username):
     :param username: The username of the person tweeting.
     :return: None
     """
-    user_id = get_id(username)
+    user_id = get_id(cur, username)
     tweet_text = typer.prompt("Compose your tweet")
     cur.execute("INSERT INTO tweets (user_id, tweet_content, timestamp) VALUES (?, ?, datetime('now'))",
                 (user_id, tweet_text))
