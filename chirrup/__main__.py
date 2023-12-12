@@ -38,7 +38,7 @@ def tweet():
     cursor.connection.close()
 
 
-@app.callback()
+@app.command()
 def timeline(
         show_following: bool = typer.Option(False, "--following", "-f",
                                             help="Also show tweets from people you follow.")
