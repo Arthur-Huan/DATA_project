@@ -19,6 +19,9 @@ def register():
 
 @app.command()
 def login():
+    """
+    Login user and prompt for additional commands.
+    """
     cursor = init_cursor()
     username = login_user(cursor)
     if username:  # If login is successful, show additional commands
@@ -34,25 +37,29 @@ def login():
         typer.echo("6. Follow a user")
         typer.echo("7. Unfollow a user")
         typer.echo("8. Retweet a tweet")
+        typer.echo("E. Exit")
 
-        choice = typer.prompt("What would you wish to do? (1/2/3/4/5/6/7/8)")
-
-        if choice == "1":
-            post_tweet(cursor, username)
-        elif choice == "2":
-            view_timeline(cursor, username)
-        elif choice == "3":
-            like_tweet(cursor, username)
-        elif choice == "4":
-            view_likes(cursor)
-        elif choice == "5":
-            add_comment(cursor, username)
-        elif choice == "6":
-            follow_user(cursor, username)
-        elif choice == "7":
-            unfollow_user(cursor, username)
-        elif choice == "8":
-            retweet_tweet(cursor, username)
+        choice = 0
+        while choice != "E" and choice != "e":
+            choice = typer.prompt("What would you wish to do? (1/2/3/4/5/6/7/8/E)")
+            if choice == "1":
+                post_tweet(cursor, username)
+            elif choice == "2":
+                view_timeline(cursor, username)
+            elif choice == "3":
+                like_tweet(cursor, username)
+            elif choice == "4":
+                view_likes(cursor)
+            elif choice == "5":
+                add_comment(cursor, username)
+            elif choice == "6":
+                follow_user(cursor, username)
+            elif choice == "7":
+                unfollow_user(cursor, username)
+            elif choice == "8":
+                retweet_tweet(cursor, username)
+            else:
+                typer.echo("Invalid choice. Please try again.")
 
 
 @app.command()
@@ -64,11 +71,17 @@ def tweet():
 
 
 @app.command()
-def timeline():
+def timeline(
+        show_following: bool = typer.Option(False, "--following", "-f",
+                                            help="Also show tweets from people you follow.")
+):
     cursor = init_cursor()
     username = login_user(cursor)
     if username:
-        view_timeline(cursor, username)
+        if show_following:
+            view_following_timeline(cursor, username)
+        else:
+            view_timeline(cursor, username)
 
 
 @app.command()

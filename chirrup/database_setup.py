@@ -6,7 +6,7 @@ def reset_database(database_path):
     try:
         os.remove(database_path)
     except FileNotFoundError:
-        print(f"Database at {database_path} was not found.")
+        print(f"Database at {database_path} was not found. Created new database.")
     finally:
         initialize_database(database_path)
 
@@ -34,9 +34,11 @@ def initialize_database(database_name):
     CREATE TABLE IF NOT EXISTS tweets (
         tweet_id INTEGER PRIMARY KEY,
         user_id INTEGER,
+        username TEXT,
         tweet_content TEXT,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        FOREIGN KEY (user_id) REFERENCES users(user_id),
+        FOREIGN KEY (username) REFERENCES users(username)
     )
     ''')
 

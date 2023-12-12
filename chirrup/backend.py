@@ -177,8 +177,8 @@ def post_tweet(cur, username):
     """
     user_id = get_id(cur, username)
     tweet_text = typer.prompt("Compose your tweet")
-    cur.execute("INSERT INTO tweets (user_id, tweet_content, timestamp) VALUES (?, ?, datetime('now'))",
-                (user_id, tweet_text))
+    cur.execute("INSERT INTO tweets (user_id, username, tweet_content, timestamp) VALUES (?, ?, ?, datetime('now'))",
+                (user_id, username, tweet_text))
     typer.echo("Tweet posted successfully.")
 
 
@@ -195,21 +195,36 @@ def view_timeline(cur, user):
     :return: None
     """
     user_id = get_id(cur, user)
-    '''
+
     cur.execute("""
-        SELECT t.user_id, u.username, t.tweet_content, t.timestamp
-        FROM tweets t
-        JOIN follows f ON t.user_id = f.following_user_id
-        JOIN users u ON t.user_id = u.user_id
-        WHERE t.user_id = ?
-        ORDER BY t.timestamp DESC
-    """, (user_id,))
-    '''
-    cur.execute("""
-    SELECT t.user_id, t.tweet_content, t.timestamp
-    FROM tweets t
+    SELECT tweet_id, username, tweet_content, timestamp
+    FROM tweets
     WHERE user_id = ?
-    ORDER BY t.timestamp DESC""", (user_id,))
+    ORDER BY timestamp DESC""", (user_id,))
+
+    tweets = cur.fetchall()
+    if tweets:
+        for t in tweets:
+            typer.echo("{} - {} (@{}): {}".format(t[0], t[2], t[1], t[3]))
+    else:
+        typer.echo("Your timeline is empty.")
+
+
+def view_following_timeline(cur, user):
+    """
+    Prints the user's timeline, as well all tweets of the users the user follows. Assumes user is already logged in.
+    :param cur: SQL cursor
+    :param user: Username or ID of user, judging based on the type of the parameter
+    :return: None
+    """
+    user_id = get_id(cur, user)
+
+    cur.execute("""
+    SELECT username, tweet_content, timestamp
+    FROM tweets
+    WHERE user_id IN (SELECT following_user_id FROM follows WHERE follower_user_id = ?
+                        UNION SELECT ? as following_user_id)
+    ORDER BY timestamp DESC""", (user_id, user_id))
 
     tweets = cur.fetchall()
     if tweets:
