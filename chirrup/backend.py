@@ -274,14 +274,17 @@ def view_likes(cur):
 def add_comment(cur, username):
     tweet_id = typer.prompt("Enter the ID of the tweet you want to comment on")
     cur.execute("SELECT 1 FROM tweets WHERE tweet_id = ?", (tweet_id,))
-    if cur.fetchone() is None:
+    tweet_exists = cur.fetchone()
+
+    if tweet_exists:
+        comment_text = typer.prompt("Enter your comment")
+        # Store the comment in the database
+        cur.execute(
+            "INSERT INTO comments (username, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
+            (username, tweet_id, comment_text))
+        typer.echo("Comment added successfully.")
+    else:
         typer.echo("Tweet doesn't exist.")
-        return
-    comment_text = typer.prompt("Enter your comment")
-    # Store the comment in the database
-    cur.execute("INSERT INTO comments (username, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
-                (username, tweet_id, comment_text))
-    typer.echo("Comment added successfully.")
 
 
 def view_comments(cur):
