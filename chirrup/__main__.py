@@ -40,7 +40,7 @@ def login():
         typer.echo("E. Exit")
 
         choice = 0
-        while choice != "E" and choice != "e":
+        while True:
             choice = typer.prompt("What would you wish to do? (1/2/3/4/5/6/7/8/E)")
             if choice == "1":
                 post_tweet(cursor, username)
@@ -58,6 +58,10 @@ def login():
                 unfollow_user(cursor, username)
             elif choice == "8":
                 retweet_tweet(cursor, username)
+            elif choice == "E" or choice == "e":
+                cursor.connection.commit()
+                cursor.connection.close()
+                raise typer.Exit()
             else:
                 typer.echo("Invalid choice. Please try again.")
 
@@ -68,6 +72,8 @@ def tweet():
     username = login_user(cursor)
     if username:
         post_tweet(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 @app.command()
@@ -82,6 +88,8 @@ def timeline(
             view_following_timeline(cursor, username)
         else:
             view_timeline(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 @app.command()
@@ -90,12 +98,16 @@ def like():
     username = login_user(cursor)
     if username:
         like_tweet(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 @app.command()
 def view_likes():
     cursor = init_cursor()
     view_likes(cursor)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 @app.command()
@@ -104,6 +116,8 @@ def comment():
     username = login_user(cursor)
     if username:
         add_comment(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 @app.command()
@@ -112,6 +126,8 @@ def follow():
     username = login_user(cursor)
     if username:
         follow_user(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 @app.command()
@@ -120,6 +136,8 @@ def unfollow():
     username = login_user(cursor)
     if username:
         unfollow_user(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 @app.command()
@@ -128,6 +146,8 @@ def retweet():
     username = login_user(cursor)
     if username:
         retweet_tweet(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 def version_callback(value: bool):
@@ -153,6 +173,8 @@ def menu():
             login()
         elif choice == "E" or choice == "e":
             typer.echo("Exiting the application.")
+            cursor.connection.commit()
+            cursor.connection.close()
             raise typer.Exit()
         else:
             typer.echo("Invalid choice.")
