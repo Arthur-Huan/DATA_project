@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from chirrup import __database_path__
 
 
 def reset_database(database_path):
@@ -68,11 +69,11 @@ def initialize_database(database_name):
     cur.execute('''
     CREATE TABLE IF NOT EXISTS comments (
         comment_id INTEGER PRIMARY KEY,
-        user_id INTEGER,
+        username TEXT,
         tweet_id INTEGER,
         comment_text TEXT,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(user_id),
+        FOREIGN KEY (username) REFERENCES users(username),
         FOREIGN KEY (tweet_id) REFERENCES tweets(tweet_id)
     )
     ''')
@@ -91,3 +92,7 @@ def initialize_database(database_name):
 
     conn.commit()
     conn.close()
+
+
+if __name__ == "__main__":
+    initialize_database(__database_path__)

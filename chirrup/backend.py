@@ -149,11 +149,11 @@ def login_user(cur):
     password = typer.prompt("Enter your password", hide_input=True)
     # Check if the provided credentials are valid
     cur.execute("SELECT password FROM users WHERE username = ?", (username,))
-    hash = cur.fetchone()
-    if hash is None:
+    hashed_pw_fetched_row = cur.fetchone()
+    if hashed_pw_fetched_row is None:
         typer.echo("User doesn't exist. Please try again.")
     else:
-        hashed_password = hash[0]
+        hashed_password = hashed_pw_fetched_row[0]
         if verify_password(password, hashed_password):
             typer.echo(f"Login successful. Welcome, {username}!")
             del password, hashed_password
@@ -271,15 +271,38 @@ def view_likes(cur):
 # ========================
 
 
-# Function to add a comment to a tweet
 def add_comment(cur, username):
-    user_id = get_id(cur, username)
     tweet_id = typer.prompt("Enter the ID of the tweet you want to comment on")
+    cur.execute("SELECT 1 FROM tweets WHERE tweet_id = ?", (tweet_id,))
+    if cur.fetchone is None:
+        typer.echo("Tweet doesn't exist.")
+        return
     comment_text = typer.prompt("Enter your comment")
     # Store the comment in the database
-    cur.execute("INSERT INTO comments (user_id, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
-                (user_id, tweet_id, comment_text))
+    cur.execute("INSERT INTO comments (username, tweet_id, comment_text, timestamp) VALUES (?, ?, ?, datetime('now'))",
+                (username, tweet_id, comment_text))
     typer.echo("Comment added successfully.")
+
+
+def view_comments(cur):
+    tweet_id = typer.prompt("Enter the ID of the tweet you'd like to see comments for")
+    cur.execute("SELECT 1 FROM tweets WHERE tweet_id = ?", (tweet_id,))
+    if cur.fetchone is None:
+        typer.echo("Tweet doesn't exist.")
+        return
+
+    cur.execute("""
+    SELECT comment_id, username, comment_text, timestamp
+    FROM comments
+    WHERE tweet_id = ?
+    ORDER BY timestamp DESC""", (tweet_id,))
+
+    tweets = cur.fetchall()
+    if tweets:
+        for t in tweets:
+            typer.echo("   Comment ID {} @{} - {}:\n{}".format(t[0], t[1], t[3], t[2]))
+    else:
+        typer.echo(f"No comments on tweet ID {tweet_id}.")
 
 
 # ========================
@@ -295,7 +318,6 @@ def follow_user(cur, username):
     :return: None
     """
     user_to_follow = typer.prompt("Enter the username of the user you'd like to follow")
-
 
     # Check if the user exists
     cur.execute("SELECT 1 FROM users WHERE username = ?", (user_to_follow,))
@@ -367,7 +389,8 @@ def retweet_tweet(cur, user):
     else:
         original_tweeter = tweet_selected[1]
         tweet_text = f"Retweet from tweet {tweet_id}@{original_tweeter}\n" + tweet_selected[0]
-        cur.execute("INSERT INTO tweets (user_id, username, tweet_content, timestamp) VALUES (?, ?, ?, datetime('now'))",
+        cur.execute(
+            "INSERT INTO tweets (user_id, username, tweet_content, timestamp) VALUES (?, ?, ?, datetime('now'))",
             (user_id, user, tweet_text))
         cur.execute("INSERT INTO retweets (user_id, tweet_id) VALUES (?, ?)", (user_id, tweet_id))
         typer.echo("Tweet retweeted successfully.")

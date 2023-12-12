@@ -96,6 +96,19 @@ def comment():
 
 
 @app.command()
+def view_comments():
+    """
+    View all comments on a tweet.
+    """
+    cursor = init_cursor()
+    username = backend.login_user(cursor)
+    if username:
+        backend.view_comments(cursor)
+    cursor.connection.commit()
+    cursor.connection.close()
+
+
+@app.command()
 def follow():
     """
     Follow a user.
@@ -150,14 +163,15 @@ def login():
         typer.echo("2. View your timeline")
         typer.echo("3. Like a tweet")
         typer.echo("4. View likes on a tweet")
-        typer.echo("5. Add a comment to a tweet")
-        typer.echo("6. Follow a user")
-        typer.echo("7. Unfollow a user")
-        typer.echo("8. Retweet a tweet")
+        typer.echo("5. Comment on a tweet")
+        typer.echo("6. View comments on a tweet.")
+        typer.echo("7. Follow a user")
+        typer.echo("8. Unfollow a user")
+        typer.echo("9. Retweet a tweet")
         typer.echo("E. Exit")
 
         while True:
-            choice = typer.prompt("What would you wish to do? (1/2/3/4/5/6/7/8/E)")
+            choice = typer.prompt("What would you wish to do? (1/2/3/4/5/6/7/8/9/E)")
             if choice == "1":
                 backend.post_tweet(cursor, username)
             elif choice == "2":
@@ -169,10 +183,12 @@ def login():
             elif choice == "5":
                 backend.add_comment(cursor, username)
             elif choice == "6":
-                backend.follow_user(cursor, username)
+                backend.view_comments(cursor)
             elif choice == "7":
-                backend.unfollow_user(cursor, username)
+                backend.follow_user(cursor, username)
             elif choice == "8":
+                backend.unfollow_user(cursor, username)
+            elif choice == "9":
                 backend.retweet_tweet(cursor, username)
             elif choice == "E" or choice == "e":
                 cursor.connection.commit()
