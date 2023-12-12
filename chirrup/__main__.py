@@ -1,5 +1,7 @@
+import typer
+import sqlite3
 from chirrup import __version__, __app_name__, __database_path__, database_setup
-from chirrup.backend import *
+import chirrup.backend as backend  # DO NOT import all as *. There will be overlapping function names.
 
 app = typer.Typer()
 
@@ -11,19 +13,134 @@ def init_cursor():
     return cur
 
 
+def version_callback(value: bool):
+    if value:
+        typer.echo(f"{__app_name__} {__version__}")
+        raise typer.Exit()
+
+
 @app.command()
 def register():
     cursor = init_cursor()
-    register_user(cursor)
+    backend.register_user(cursor)
+
+
+@app.command()
+def tweet():
+    """
+    Post a new tweet
+    """
+    cursor = init_cursor()
+    username = backend.login_user(cursor)
+    if username:
+        backend.post_tweet(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
+
+
+@app.callback()
+def timeline(
+        show_following: bool = typer.Option(False, "--following", "-f",
+                                            help="Also show tweets from people you follow.")
+):
+    """
+    View your timeline.
+    """
+    cursor = init_cursor()
+    username = backend.login_user(cursor)
+    if username:
+        if show_following:
+            backend.view_following_timeline(cursor, username)
+        else:
+            backend.view_timeline(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
+
+
+@app.command()
+def like():
+    """
+    Like a tweet with its ID.
+    """
+    cursor = init_cursor()
+    username = backend.login_user(cursor)
+    if username:
+        backend.like_tweet(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
+
+
+@app.command()
+def view_likes():
+    """
+    View the number of likes on a tweet using its ID.
+    :return:
+    """
+    cursor = init_cursor()
+    backend.view_likes(cursor)
+    cursor.connection.commit()
+    cursor.connection.close()
+
+
+@app.command()
+def comment():
+    """
+    Comment on a tweet.
+    """
+    cursor = init_cursor()
+    username = backend.login_user(cursor)
+    if username:
+        backend.add_comment(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
+
+
+@app.command()
+def follow():
+    """
+    Follow a user.
+    """
+    cursor = init_cursor()
+    username = backend.login_user(cursor)
+    if username:
+        backend.follow_user(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
+
+
+@app.command()
+def unfollow():
+    """
+    Unfollow a user.
+    """
+    cursor = init_cursor()
+    username = backend.login_user(cursor)
+    if username:
+        backend.unfollow_user(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
+
+
+@app.command()
+def retweet():
+    """
+    Retweet a tweet from another user,
+    """
+    cursor = init_cursor()
+    username = backend.login_user(cursor)
+    if username:
+        backend.retweet_tweet(cursor, username)
+    cursor.connection.commit()
+    cursor.connection.close()
 
 
 @app.command()
 def login():
     """
-    Login user and prompt for additional commands.
+    Log in and access actions menu.
     """
     cursor = init_cursor()
-    username = login_user(cursor)
+    username = backend.login_user(cursor)
     if username:  # If login is successful, show additional commands
         # ========================
         # 3.8 - User Friendly Menu System ###
@@ -39,25 +156,24 @@ def login():
         typer.echo("8. Retweet a tweet")
         typer.echo("E. Exit")
 
-        choice = 0
         while True:
             choice = typer.prompt("What would you wish to do? (1/2/3/4/5/6/7/8/E)")
             if choice == "1":
-                post_tweet(cursor, username)
+                backend.post_tweet(cursor, username)
             elif choice == "2":
-                view_timeline(cursor, username)
+                backend.view_timeline(cursor, username)
             elif choice == "3":
-                like_tweet(cursor, username)
+                backend.like_tweet(cursor, username)
             elif choice == "4":
-                view_likes(cursor)
+                backend.view_likes(cursor)
             elif choice == "5":
-                add_comment(cursor, username)
+                backend.add_comment(cursor, username)
             elif choice == "6":
-                follow_user(cursor, username)
+                backend.follow_user(cursor, username)
             elif choice == "7":
-                unfollow_user(cursor, username)
+                backend.unfollow_user(cursor, username)
             elif choice == "8":
-                retweet_tweet(cursor, username)
+                backend.retweet_tweet(cursor, username)
             elif choice == "E" or choice == "e":
                 cursor.connection.commit()
                 cursor.connection.close()
@@ -67,97 +183,13 @@ def login():
 
 
 @app.command()
-def tweet():
-    cursor = init_cursor()
-    username = login_user(cursor)
-    if username:
-        post_tweet(cursor, username)
-    cursor.connection.commit()
-    cursor.connection.close()
-
-
-@app.command()
-def timeline(
-        show_following: bool = typer.Option(False, "--following", "-f",
-                                            help="Also show tweets from people you follow.")
-):
-    cursor = init_cursor()
-    username = login_user(cursor)
-    if username:
-        if show_following:
-            view_following_timeline(cursor, username)
-        else:
-            view_timeline(cursor, username)
-    cursor.connection.commit()
-    cursor.connection.close()
-
-
-@app.command()
-def like():
-    cursor = init_cursor()
-    username = login_user(cursor)
-    if username:
-        like_tweet(cursor, username)
-    cursor.connection.commit()
-    cursor.connection.close()
-
-
-@app.command()
-def view_likes():
-    cursor = init_cursor()
-    view_likes(cursor)
-    cursor.connection.commit()
-    cursor.connection.close()
-
-
-@app.command()
-def comment():
-    cursor = init_cursor()
-    username = login_user(cursor)
-    if username:
-        add_comment(cursor, username)
-    cursor.connection.commit()
-    cursor.connection.close()
-
-
-@app.command()
-def follow():
-    cursor = init_cursor()
-    username = login_user(cursor)
-    if username:
-        follow_user(cursor, username)
-    cursor.connection.commit()
-    cursor.connection.close()
-
-
-@app.command()
-def unfollow():
-    cursor = init_cursor()
-    username = login_user(cursor)
-    if username:
-        unfollow_user(cursor, username)
-    cursor.connection.commit()
-    cursor.connection.close()
-
-
-@app.command()
-def retweet():
-    cursor = init_cursor()
-    username = login_user(cursor)
-    if username:
-        retweet_tweet(cursor, username)
-    cursor.connection.commit()
-    cursor.connection.close()
-
-
-def version_callback(value: bool):
-    if value:
-        typer.echo(f"{__app_name__} {__version__}")
-        raise typer.Exit()
-
-
-@app.command()
 def menu():
+    """
+    Main menu. Returning users can use `login` menu instead.
+    Register will allow a user to register.
+    Login uses the above function's menu.
+    Exist is self-explanatory.
+    """
     cursor = init_cursor()
     typer.echo("=== Twitter-like CLI Menu ===")
     while True:
@@ -168,7 +200,7 @@ def menu():
         choice = typer.prompt("Enter your choice (1/2/E)")
 
         if choice == "1":
-            register_user(cursor)
+            backend.register_user(cursor)
         elif choice == "2":
             login()
         elif choice == "E" or choice == "e":

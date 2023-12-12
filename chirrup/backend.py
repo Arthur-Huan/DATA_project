@@ -205,7 +205,7 @@ def view_timeline(cur, user):
     tweets = cur.fetchall()
     if tweets:
         for t in tweets:
-            typer.echo("{} - {} (@{}): {}".format(t[0], t[2], t[1], t[3]))
+            typer.echo("   Tweet ID {} @{} - {}:\n{}".format(t[0], t[1], t[3], t[2]))
     else:
         typer.echo("Your timeline is empty.")
 
@@ -229,7 +229,7 @@ def view_following_timeline(cur, user):
     tweets = cur.fetchall()
     if tweets:
         for t in tweets:
-            typer.echo("{} (@{}): {}".format(t[1], t[0], t[2]))
+            typer.echo("   Tweet ID {} @{} - {}:\n{}".format(t[0], t[1], t[3], t[2]))
     else:
         typer.echo("Your timeline is empty.")
 
@@ -258,8 +258,9 @@ or if the value just has to be retrievable'''
 def view_likes(cur):
     tweet_id = typer.prompt("Enter the ID of the tweet you want to view likes for")
     cur.execute("SELECT COUNT(*) FROM likes WHERE tweet_id = ?", (tweet_id,))
-    likes_count = cur.fetchone()[0]
-    if likes_count is not None:
+    likes = cur.fetchone()
+    if likes is not None:
+        likes_count = likes[0]
         typer.echo("Tweet {} has {} likes.".format(tweet_id, likes_count))
     else:
         typer.echo("Tweet not found.")
@@ -294,14 +295,15 @@ def follow_user(cur, username):
     :return: None
     """
     user_to_follow = typer.prompt("Enter the username of the user you'd like to follow")
-    user_id = get_id(cur, username)
-    user_to_follow_id = get_id(cur, user_to_follow)
+
 
     # Check if the user exists
     cur.execute("SELECT 1 FROM users WHERE username = ?", (user_to_follow,))
     user_exists = cur.fetchone()
 
     if user_exists:
+        user_id = get_id(cur, username)
+        user_to_follow_id = get_id(cur, user_to_follow)
         # Check if the user is not already being followed
         cur.execute("SELECT 1 FROM follows WHERE follower_user_id = ? AND following_user_id = ?",
                     (user_id, user_to_follow_id))
@@ -327,22 +329,28 @@ def unfollow_user(cur, username):
     :return: None
     """
     user_to_unfollow = typer.prompt("Enter the username of the user you'd like to unfollow")
+
+    cur.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+    if cur.fetchone() is None:
+        typer.echo(f"User {username} doesn't exist.")
+        return
+
     user_id = get_id(cur, username)
     user_to_unfollow_id = get_id(cur, user_to_unfollow)
-
     # Check if the user is being followed
     cur.execute("SELECT 1 FROM follows WHERE follower_user_id = ? AND following_user_id = ?",
                 (user_id, user_to_unfollow_id))
     is_following = cur.fetchone()
 
     if is_following:
+
         # Unfollow the user in the database
         cur.execute("DELETE FROM follows WHERE follower_user_id = ? AND following_user_id = ?",
                     (user_id, user_to_unfollow_id))
         cur.connection.commit()
         typer.echo(f"You have unfollowed {user_to_unfollow}.")
     else:
-        typer.echo(f"You are not following {user_to_unfollow}.")
+        typer.echo(f"You are not following {user_to_unfollow}, or user doesn't exist.")
 
 
 # ========================
@@ -352,5 +360,14 @@ def unfollow_user(cur, username):
 def retweet_tweet(cur, user):
     user_id = get_id(cur, user)
     tweet_id = typer.prompt("Enter the ID of the tweet you want to retweet")
-    cur.execute("INSERT INTO retweets (user_id, tweet_id) VALUES (?, ?)", (user_id, tweet_id))
-    typer.echo("Tweet retweeted successfully.")
+    cur.execute("SELECT tweet_content, username FROM tweets WHERE tweet_id = ?", (tweet_id,))
+    tweet_selected = cur.fetchon()
+    if tweet_selected is None:
+        typer.echo("Tweet doesn't exist.")
+    else:
+        original_tweeter = tweet_selected[1]
+        tweet_text = f"Retweet from tweet {tweet_id}@{original_tweeter}\n" + tweet_selected[0]
+        cur.execute("INSERT INTO tweets (user_id, username, tweet_content, timestamp) VALUES (?, ?, ?, datetime('now'))",
+            (user_id, user, tweet_text))
+        cur.execute("INSERT INTO retweets (user_id, tweet_id) VALUES (?, ?)", (user_id, tweet_id))
+        typer.echo("Tweet retweeted successfully.")
