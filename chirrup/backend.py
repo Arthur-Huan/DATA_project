@@ -195,6 +195,7 @@ def view_timeline(cur, user):
     :return: None
     """
     user_id = get_id(cur, user)
+    '''
     cur.execute("""
         SELECT t.user_id, u.username, t.tweet_content, t.timestamp
         FROM tweets t
@@ -203,6 +204,12 @@ def view_timeline(cur, user):
         WHERE t.user_id = ?
         ORDER BY t.timestamp DESC
     """, (user_id,))
+    '''
+    cur.execute("""
+    SELECT t.user_id, t.tweet_content, t.timestamp
+    FROM tweets t
+    WHERE user_id = ?
+    ORDER BY t.timestamp DESC""", (user_id,))
 
     tweets = cur.fetchall()
     if tweets:
